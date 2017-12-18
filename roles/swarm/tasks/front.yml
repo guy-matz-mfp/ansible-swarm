@@ -1,0 +1,37 @@
+---
+# The first node in the cluster initializes the cluster
+- name: Init "Swarm Mode" on the first manager.
+  shell: docker swarm init
+        --listen-addr {{ swarm_manager_address }}:{{ swarm_manager_port }}
+        --advertise-addr {{ swarm_manager_address }}
+  when:
+    - "docker_info.stdout.find('Swarm: active') == -1"
+    - "ansible_hostname != groups['swarm-manager'][0]"
+
+- name: Wait for docker in manager to start
+  wait_for:
+    host: "{{ swarm_manager_address }}"
+    port: "{{ swarm_manager_port }}"
+    timeout: 120
+
+- name: Get the worker join-token.
+  shell: docker swarm join-token -q manager
+  changed_when: False
+  register: docker_worker_token
+  delegate_to: "{{ swarm_manager_address }}"
+
+# The others join . . .
+- name: Join the pending Swarm worker nodes.
+  shell: docker swarm join --token "{{ docker_worker_token.stdout }}" {{ swarm_manager_address }}:{{ swarm_manager_port }}
+  changed_when: False
+  when:
+    - "docker_info.stdout.find('Swarm: active') == -1 and docker_info.stdout.find('Swarm: pending') == -1"
+    - "ansible_hostname != groups['swarm-manager'][0]"
+
+#  . . .  and get promoted
+- name: promote swarm_manager_address
+  command: docker node update --role manager "{{ ansible_hostname }}"
+  delegate_to: "{{ swarm_manager_address }}"
+  when:
+    - "docker_info.stdout.find('Swarm: active') == -1 and docker_info.stdout.find('Swarm: pending') == -1"
+    - "ansible_hostname != groups['swarm-manager'][0]"
