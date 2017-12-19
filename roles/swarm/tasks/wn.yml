@@ -13,5 +13,5 @@
 
 - name: Join the pending Swarm worker nodes.
   shell: docker swarm join --token "{{ docker_worker_token.stdout }}" {{ swarm_manager_address }}:{{ swarm_manager_port }}
-  changed_when: False
+  changed_when: swarm_join.stdout|search('This node joined a swarm as a worker')
   when: "docker_info.stdout.find('Swarm: active') == -1 and docker_info.stdout.find('Swarm: pending') == -1"

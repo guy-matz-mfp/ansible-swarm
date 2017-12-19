@@ -1,8 +1,9 @@
 ---
 
-- hosts: swarm
+- hosts: docker
   become: True
   roles:
+    - common/ssl_certs
     - docker
 
 - hosts: swarm-manager

@@ -103,7 +103,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         #vsphere.name = "#{VAGRANT_EXECUTOR}-ansiblebox-#{VM_NAME_PREFIX}"
         vsphere.name = "#{VAGRANT_EXECUTOR}-ansiblebox"
     end
-    machine.vm.synced_folder "#{ANSIBLE_ROLE_DIRECTORY_NAME}", "/etc/ansible/roles/#{ANSIBLE_ROLE_DIRECTORY_NAME}", disabled: false
+    machine.vm.synced_folder "#{ANSIBLE_ROLE_DIRECTORY_NAME}",
+         "/etc/ansible/roles/#{ANSIBLE_ROLE_DIRECTORY_NAME}", disabled: false
     if !ANSIBLE_GITHUB_REPOS.empty?
       machine.vm.provision "pull_github_repos", type: "shell", run: "always" ,inline: <<-SHELL
         chmod 0777 /vagrant/tests/git-bulk-pull.sh
@@ -125,32 +126,36 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       ansible.playbook       = "site.yml"
       ansible.raw_arguments  = [ ANSIBLE_RAW_ARGUMENTS ]
       ansible.extra_vars     = {
-        hostgroup: MGR_NAME_PREFIX,
+        hostgroup: 'docker',
         ansible_ssh_user: 'vagrant'
       }
       ansible.groups = {
-        "swarm" => ["#{MGR_NAME_PREFIX}[1:#{MGR_COUNT}]#{VM_NAME_DOMAIN}"],
-        "#{MGR_NAME_PREFIX}" => ["#{MGR_NAME_PREFIX}[1:#{MGR_COUNT}]#{VM_NAME_DOMAIN}"]
+        "docker" => [
+                    "#{MGR_NAME_PREFIX}[1:#{MGR_COUNT}]#{VM_NAME_DOMAIN}",
+                    "#{WKR_NAME_PREFIX}[1:#{WKR_COUNT}]#{VM_NAME_DOMAIN}",
+        ],
+        "#{MGR_NAME_PREFIX}" => ["#{MGR_NAME_PREFIX}[1:#{MGR_COUNT}]#{VM_NAME_DOMAIN}"],
+        "#{WKR_NAME_PREFIX}" => ["#{WKR_NAME_PREFIX}[1:#{WKR_COUNT}]#{VM_NAME_DOMAIN}"],
       }
     end
 
-    machine.vm.provision :ansible_local, run: "always" do |ansible|
-      ansible.install        = true
-      ansible.version        = ANSIBLE_VERSION
-      ansible.limit          = WKR_NAME_PREFIX
-      ansible.verbose        = ANSIBLE_VERBOSE
-      ansible.become         = true
-      ansible.playbook       = "site.yml"
-      ansible.raw_arguments  = [ ANSIBLE_RAW_ARGUMENTS ]
-      ansible.extra_vars     = {
-        hostgroup: WKR_NAME_PREFIX,
-        ansible_ssh_user: 'vagrant'
-      }
-      ansible.groups = {
-        "swarm" => ["#{WKR_NAME_PREFIX}[1:#{WKR_COUNT}]#{VM_NAME_DOMAIN}"],
-        "#{WKR_NAME_PREFIX}" => ["#{WKR_NAME_PREFIX}[1:#{WKR_COUNT}]#{VM_NAME_DOMAIN}"],
-        "#{MGR_NAME_PREFIX}" => ["#{MGR_NAME_PREFIX}[1:#{MGR_COUNT}]#{VM_NAME_DOMAIN}"]
-      }
-    end
+#    machine.vm.provision :ansible_local, run: "always" do |ansible|
+#      ansible.install        = true
+#      ansible.version        = ANSIBLE_VERSION
+#      ansible.limit          = WKR_NAME_PREFIX
+#      ansible.verbose        = ANSIBLE_VERBOSE
+#      ansible.become         = true
+#      ansible.playbook       = "site.yml"
+#      ansible.raw_arguments  = [ ANSIBLE_RAW_ARGUMENTS ]
+#      ansible.extra_vars     = {
+#        hostgroup: WKR_NAME_PREFIX,
+#        ansible_ssh_user: 'vagrant'
+#      }
+#      ansible.groups = {
+#        "swarm" => ["#{WKR_NAME_PREFIX}[1:#{WKR_COUNT}]#{VM_NAME_DOMAIN}"],
+#        "#{WKR_NAME_PREFIX}" => ["#{WKR_NAME_PREFIX}[1:#{WKR_COUNT}]#{VM_NAME_DOMAIN}"],
+#        "#{MGR_NAME_PREFIX}" => ["#{MGR_NAME_PREFIX}[1:#{MGR_COUNT}]#{VM_NAME_DOMAIN}"]
+#      }
+#    end
   end
 end

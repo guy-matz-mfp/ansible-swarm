@@ -1,4 +1,12 @@
 ---
+- name: where am I?
+  debug: var=ansible_fqdn
+  tags: swarm
+
+- name: who is the swarm leader?
+  debug: var=groups['swarm-manager'][0]
+  tags: swarm
+
 # The first node in the cluster initializes the cluster
 - name: Init "Swarm Mode" on the first manager.
   shell: docker swarm init
@@ -6,7 +14,7 @@
         --advertise-addr {{ swarm_manager_address }}
   when:
     - "docker_info.stdout.find('Swarm: active') == -1"
-    - "ansible_hostname != groups['swarm-manager'][0]"
+    - "ansible_fqdn == groups['swarm-manager'][0]"
 
 - name: Wait for docker in manager to start
   wait_for:
@@ -14,24 +22,17 @@
     port: "{{ swarm_manager_port }}"
     timeout: 120
 
-- name: Get the worker join-token.
+- name: Get the manager join-token.
   shell: docker swarm join-token -q manager
   changed_when: False
-  register: docker_worker_token
+  register: docker_manager_token
   delegate_to: "{{ swarm_manager_address }}"
 
 # The others join . . .
-- name: Join the pending Swarm worker nodes.
-  shell: docker swarm join --token "{{ docker_worker_token.stdout }}" {{ swarm_manager_address }}:{{ swarm_manager_port }}
-  changed_when: False
+- name: Join the Swarm node as a manager.
+  shell: docker swarm join --token {{ docker_manager_token.stdout }} {{ swarm_manager_address }}:{{ swarm_manager_port }}
+  changed_when: docker_manager_join.stdout|search('This node joined a swarm as a manager')
+  register: docker_manager_join
   when:
     - "docker_info.stdout.find('Swarm: active') == -1 and docker_info.stdout.find('Swarm: pending') == -1"
-    - "ansible_hostname != groups['swarm-manager'][0]"
-
-#  . . .  and get promoted
-- name: promote swarm_manager_address
-  command: docker node update --role manager "{{ ansible_hostname }}"
-  delegate_to: "{{ swarm_manager_address }}"
-  when:
-    - "docker_info.stdout.find('Swarm: active') == -1 and docker_info.stdout.find('Swarm: pending') == -1"
-    - "ansible_hostname != groups['swarm-manager'][0]"
+    - "ansible_fqdn != groups['swarm-manager'][0]"
