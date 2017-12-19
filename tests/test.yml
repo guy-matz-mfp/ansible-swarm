@@ -1,0 +1,6 @@
+---
+- hosts: "{{ hostgroup }}"
+  become: yes
+
+  roles:
+    - vsphere-cluster-ansible-node
