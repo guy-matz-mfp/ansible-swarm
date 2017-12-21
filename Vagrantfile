@@ -48,13 +48,19 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.hostmanager.enabled      = true
   config.hostmanager.manage_host  = false
   config.hostmanager.manage_guest = true
-  config.hostmanager.ip_resolver = proc do |vm|
-      result = ''
-      vm.communicate.execute("ifconfig ens160") do |type, data|
-          result << data if type == :stdout
-      end
-      (ip = /inet (\d+\.\d+\.\d+\.\d+)/.match(result)) && ip[1]
-  end
+  config.hostmanager.ignore_private_ip = true
+#  config.hostmanager.ip_resolver = proc do |vm|
+#      result = ''
+#      vm.communicate.execute("ifconfig ens160") do |type, data|
+#          result << data if type == :stdout
+#      end
+#      (ip = /inet (\d+\.\d+\.\d+\.\d+)/.match(result)) && ip[1]
+#  end
+#  config.hostmanager.ip_resolver = proc do |vm, resolving_vm|
+#    if hostname = (vm.ssh_info && vm.ssh_info[:host])
+#      `host #{hostname}`.split("\n").last[/(\d+\.\d+\.\d+\.\d+)/, 1]
+#    end
+#  end
   config.vm.provision :hostmanager
   config.vm.synced_folder ".", "/vagrant",
     disabled: false
@@ -70,6 +76,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     override.nfs.functional = false
     vsphere.cpu_count = VM_CPUS
     vsphere.memory_mb = VM_MEMORY
+    vsphere.real_nic_ip = true
   end
 
 # Loop that will dynamically create as many virtual machines as are stated by the MGR_COUNT variable
@@ -139,23 +146,5 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       }
     end
 
-#    machine.vm.provision :ansible_local, run: "always" do |ansible|
-#      ansible.install        = true
-#      ansible.version        = ANSIBLE_VERSION
-#      ansible.limit          = WKR_NAME_PREFIX
-#      ansible.verbose        = ANSIBLE_VERBOSE
-#      ansible.become         = true
-#      ansible.playbook       = "site.yml"
-#      ansible.raw_arguments  = [ ANSIBLE_RAW_ARGUMENTS ]
-#      ansible.extra_vars     = {
-#        hostgroup: WKR_NAME_PREFIX,
-#        ansible_ssh_user: 'vagrant'
-#      }
-#      ansible.groups = {
-#        "swarm" => ["#{WKR_NAME_PREFIX}[1:#{WKR_COUNT}]#{VM_NAME_DOMAIN}"],
-#        "#{WKR_NAME_PREFIX}" => ["#{WKR_NAME_PREFIX}[1:#{WKR_COUNT}]#{VM_NAME_DOMAIN}"],
-#        "#{MGR_NAME_PREFIX}" => ["#{MGR_NAME_PREFIX}[1:#{MGR_COUNT}]#{VM_NAME_DOMAIN}"]
-#      }
-#    end
   end
 end
