@@ -49,18 +49,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.hostmanager.manage_host  = false
   config.hostmanager.manage_guest = true
   config.hostmanager.ignore_private_ip = true
-#  config.hostmanager.ip_resolver = proc do |vm|
-#      result = ''
-#      vm.communicate.execute("ifconfig ens160") do |type, data|
-#          result << data if type == :stdout
-#      end
-#      (ip = /inet (\d+\.\d+\.\d+\.\d+)/.match(result)) && ip[1]
-#  end
-#  config.hostmanager.ip_resolver = proc do |vm, resolving_vm|
-#    if hostname = (vm.ssh_info && vm.ssh_info[:host])
-#      `host #{hostname}`.split("\n").last[/(\d+\.\d+\.\d+\.\d+)/, 1]
-#    end
-#  end
   config.vm.provision :hostmanager
   config.vm.synced_folder ".", "/vagrant",
     disabled: false
